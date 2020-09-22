@@ -13,7 +13,7 @@ services:
       - ./db.env
 
   app:
-    image: matomo:fpm-alpine
+    image: matomo:3.14.1-fpm-alpine
     restart: always
     links:
       - db
