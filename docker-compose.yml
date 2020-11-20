@@ -1,37 +1,47 @@
 version: '3'
 
+networks:
+  frontend:
+    external: true
+  app:
+    driver: bridge
+    internal: false
+
 services:
-  db:
-    image: mariadb
+  mariadb:
+    image: mariadb:10.3
+    networks:
+      - app
     command: --max-allowed-packet=64MB
-    restart: always
     volumes:
       - db:/var/lib/mysql
+    ports:
+      - '3306'
     environment:
-      - MYSQL_ROOT_PASSWORD=
-    env_file:
-      - ./db.env
-    networks:
-      - matomo
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_USER: db
+      MYSQL_PASSWORD: db
+      MYSQL_DATABASE: db
 
-  app:
+  phpfpm:
     image: matomo:3.14.1-fpm-alpine
-    links:
-      - db
+    networks:
+      - app
+    depends_on:
+      - mariadb
     volumes:
 #      - ./config:/var/www/html/config:rw
 #      - ./logs:/var/www/html/logs
       - matomo:/var/www/html
-    environment:
-      - MATOMO_DATABASE_HOST=db
-    env_file:
-      - ./db.env
-    networks:
-      - matomo
 
-  web:
+
+  nginx:
     image: nginx:alpine
-    restart: always
+    networks:
+      - app
+      - frontend
+    depends_on:
+      - phpfpm
     volumes:
       - matomo:/var/www/html:ro
       # see https://github.com/matomo-org/matomo-nginx
@@ -42,16 +52,6 @@ services:
       - "traefik.enable=true"
       - "traefik.docker.network=frontend"
       - "traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=Host(`${COMPOSE_DOMAIN}`)"
-    networks:
-      - matomo
-      - frontend
-
-networks:
-  frontend:
-    external: true
-  matomo:
-    driver: bridge
-    internal: false
 
 volumes:
   db:
