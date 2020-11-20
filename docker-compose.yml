@@ -23,6 +23,21 @@ services:
       MYSQL_PASSWORD: db
       MYSQL_DATABASE: db
 
+  db-backup:
+    image: databack/mysql-backup
+    networks:
+      - app
+    depends_on:
+      - mariadb
+    volumes:
+      - /home/dkagms/bibbox-statistik-backup:/db
+    environment:
+      - DB_DUMP_TARGET=/db
+      - DB_USER=db
+      - DB_PASS=db
+      - DB_SERVER=mariadb
+      - DB_DUMP_BEGIN=+3
+
   phpfpm:
     image: matomo:3.14.1-fpm-alpine
     networks:
